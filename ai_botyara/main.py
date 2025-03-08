@@ -1,13 +1,16 @@
 import requests
 import sys
 from http import HTTPStatus
-from telegram.ext import CommandHandler, Updater, Filters, MessageHandler
+from telegram.ext import CallbackContext, CommandHandler, Updater, Filters, MessageHandler
 from constants import TOKEN_TG, MODEL_NAME, API_URL, YA_TOKEN
 from exceptions import RequestErrorApi, NotConstants, NotData, NotMessage
 
 
 def check_constants() -> None:
-    required_vars = [TOKEN_TG, MODEL_NAME, API_URL, YA_TOKEN]
+    """
+    Функция проверки необходимых переменных окружения
+    """
+    required_vars: list = [TOKEN_TG, MODEL_NAME, API_URL, YA_TOKEN]
     if not all(required_vars):
         raise NotConstants(
             "Отсутствуют обязательные переменные, "
@@ -16,13 +19,17 @@ def check_constants() -> None:
 
 
 def check_and_return_response(response: requests.Response) -> str:
+    """
+    Функция проверки ответа АПИ на валидность
+    и наличия необходимых данных
+    """
     try:
-        response = response.json()
+        response: dict[str, any] = response.json()
     except ValueError as e:
         raise RequestErrorApi(
             f"Ошибка при преобразовании ответа: {e}"
         )
-    output = response.get(
+    output: str = response.get(
         "result"
         ).get("alternatives")[0].get(
             "message"
@@ -36,6 +43,7 @@ def check_and_return_response(response: requests.Response) -> str:
 
 
 def request_for_model(message: str) -> requests.Response:
+    """Функция запроса к апи ИИ-модели"""
     if not message:
         raise NotMessage(
             "Message text is empty"
@@ -62,7 +70,7 @@ def request_for_model(message: str) -> requests.Response:
         ]
     }
     try:
-        response = requests.post(API_URL, headers=headers, json=promt)
+        response: requests.Response = requests.post(API_URL, headers=headers, json=promt)
     except requests.RequestException as e:
         raise RequestErrorApi(
             f"Ошибка при отправке запроса: {e}"
@@ -74,18 +82,23 @@ def request_for_model(message: str) -> requests.Response:
     return response
 
 
-def request_for_api_and_send_message(context, chat, message) -> None:
+def request_for_api_and_send_message(context: CallbackContext, chat: any, message: str) -> None:
+    """Функция отправки сообщения в чат"""
     try:
-        response = request_for_model(message)
-        output = check_and_return_response(response)
+        response: requests.Response = request_for_model(message)
+        output: str = check_and_return_response(response)
         context.bot.send_message(chat_id=chat.id, text=output)
     except Exception as e:
         text = f"Возникла ошибка: {e}"
         context.bot.send_message(chat_id=chat.id, text=text)
 
 
-def messages(update, context) -> None:
-    chat = update.effective_chat
+def messages(update: Updater, context: CallbackContext) -> None:
+    """
+    Функция получения сообщения и распредления,
+    личный или групповой чат
+    """
+    chat: any = update.effective_chat
     message: str = update.message.text
     if chat.type == "private":
         private_chat(chat, context, message)
@@ -93,19 +106,25 @@ def messages(update, context) -> None:
         group_chat(chat, context, message)
 
 
-def private_chat(chat, context, message):
+def private_chat(chat: any, context: CallbackContext, message: str):
+    """Функция ответа бота в личных сообщениях"""
     request_for_api_and_send_message(context, chat, message)
 
 
-def group_chat(chat, context, message):
+def group_chat(chat: any, context: CallbackContext, message: str):
+    """
+    Функция ответа бота в групповом чате
+    Регирует только если к нему обращаются
+    """
     if "@TestIntelligenceModelBot" in message:
-        message_new = message.replace("@TestIntelligenceModelBot", "")
-        request_for_api_and_send_message(context, chat, message_new)
+        message_new: str = message.replace("@TestIntelligenceModelBot", "")
+        request_for_api_and_send_message(context, chat, message_new[1:])
 
 
-def hello(update, context):
-    chat = update.effective_chat
-    output = (
+def hello(update: Updater, context: CallbackContext):
+    """Функция приветствия, отрабатывает команду /start"""
+    chat: any = update.effective_chat
+    output: str = (
         f"Привет {update.message.from_user.username}.\n"
         f"Я бот в который без его ведома засунули "
         f"Yandex GPT. Он как раз и отвечает на все сообщения "
@@ -115,7 +134,8 @@ def hello(update, context):
 
 
 def main() -> None:
-    updater = Updater(token=TOKEN_TG)
+    """Основная функция"""
+    updater: Updater = Updater(token=TOKEN_TG)
     try:
         check_constants()
     except Exception:
