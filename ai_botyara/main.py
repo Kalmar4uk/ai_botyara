@@ -4,6 +4,7 @@ from http import HTTPStatus
 from telegram.ext import CallbackContext, CommandHandler, Updater, Filters, MessageHandler
 from constants import TOKEN_TG, MODEL_NAME, API_URL, YA_TOKEN
 from exceptions import RequestErrorApi, NotConstants, NotData, NotMessage
+from settings_logs import logger
 
 
 def check_constants() -> None:
@@ -12,10 +13,10 @@ def check_constants() -> None:
     """
     required_vars: list = [TOKEN_TG, MODEL_NAME, API_URL, YA_TOKEN]
     if not all(required_vars):
-        raise NotConstants(
+        logger.critical(
             "Отсутствуют обязательные переменные, "
-            "работа остановлена."
-        )
+            "работа остановлена.")
+        sys.exit(1)
 
 
 def check_and_return_response(response: requests.Response) -> str:
@@ -135,11 +136,8 @@ def hello(update: Updater, context: CallbackContext):
 
 def main() -> None:
     """Основная функция"""
+    check_constants()
     updater: Updater = Updater(token=TOKEN_TG)
-    try:
-        check_constants()
-    except Exception:
-        sys.exit(1)
     updater.dispatcher.add_handler(
         CommandHandler("start", hello)
     )
