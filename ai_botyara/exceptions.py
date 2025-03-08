@@ -8,3 +8,7 @@ class NotData(Exception):
 
 class NotConstants(Exception):
     pass
+
+
+class NotMessage(Exception):
+    pass
