@@ -4,7 +4,7 @@ from http import HTTPStatus
 from telegram.ext import (
     CallbackContext, CommandHandler, Updater, Filters, MessageHandler
 )
-from constants import TOKEN_TG, MODEL_NAME, API_URL, YA_TOKEN
+from constants import TOKEN_TG, MODEL_NAME, API_URL, YA_TOKEN, TELEGRAM_TEST_TOKEN
 from exceptions import RequestErrorApi, NotData, NotMessage
 from settings_logs import logger
 
@@ -13,8 +13,9 @@ def check_constants() -> None:
     """
     Функция проверки необходимых переменных окружения
     """
-    required_vars: list = [TOKEN_TG, MODEL_NAME, API_URL, YA_TOKEN]
+    required_vars: list = [TELEGRAM_TEST_TOKEN, TOKEN_TG, MODEL_NAME, API_URL, YA_TOKEN]
     if not all(required_vars):
+        print("Отсутствуют переменные окружения")
         logger.critical(
             "Отсутствуют обязательные переменные, "
             "работа остановлена.")
@@ -92,7 +93,9 @@ def request_for_model(message: str) -> requests.Response:
         logger.info(
             "Отправляем запрос к АПИ"
         )
-        response: requests.Response = requests.post(API_URL, headers=headers, json=promt)
+        response: requests.Response = requests.post(
+            API_URL, headers=headers, json=promt
+        )
     except requests.RequestException as error:
         logger.critical(
             error

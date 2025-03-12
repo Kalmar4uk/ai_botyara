@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  bot:
+    image: kalmmar4uk/ai_bot
+    env_file: .env
+    volumes:
+      - ./logs:/app/logs
